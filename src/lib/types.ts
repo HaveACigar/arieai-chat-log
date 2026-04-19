@@ -17,6 +17,11 @@ export type ActivityLevel =
 
 export type BiologicalSex = "male" | "female";
 
+export interface DailyPhoto {
+  url: string;
+  description?: string;
+}
+
 export interface ExerciseEntry {
   name: string;
   durationMin: number;
@@ -24,10 +29,20 @@ export interface ExerciseEntry {
   intensity: "low" | "moderate" | "high";
 }
 
+export interface WorkoutEntry {
+  exercise: string;
+  sets: number;
+  reps: number;
+  weight: number;
+  notes?: string;
+}
+
 export interface DailyLog {
   date: string;
   weight: number;
   weightUnit: WeightUnit;
+  boneMass?: number;
+  weighInContext?: string;
   caloriesIn: number;
   caloriesMaintenance: number;
   goalType: GoalType;
@@ -37,8 +52,10 @@ export interface DailyLog {
   heightCm: number;
   notes?: string;
   exercises: ExerciseEntry[];
+  workouts?: WorkoutEntry[];
   totalExerciseCalories: number;
   photoUrls: string[];
+  photoEntries?: DailyPhoto[];
   updatedAt: string;
 }
 
