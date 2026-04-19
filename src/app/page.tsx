@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   GoogleAuthProvider,
   User,
@@ -89,6 +89,7 @@ export default function Home() {
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [existingPhotoUrls, setExistingPhotoUrls] = useState<string[]>([]);
   const [exercises, setExercises] = useState<ExerciseEntry[]>([makeEmptyExercise()]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [allLogs, setAllLogs] = useState<DailyLog[]>([]);
   const [auditRows, setAuditRows] = useState<Array<{ id: string; action: string; logDate: string; timestamp?: string }>>([]);
@@ -504,18 +505,46 @@ export default function Home() {
               <button className={styles.secondaryBtn} onClick={() => setExercises((rows) => [...rows, makeEmptyExercise()])}>Add exercise</button>
 
               <h4>Photos (optional)</h4>
-              <label>
-                Upload image files (0..many, up to {MAX_PHOTO_SIZE_MB}MB each)
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={(e) => setPhotoFiles(Array.from(e.target.files || []))}
-                />
-              </label>
-              {existingPhotoUrls.length > 0 && (
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const newFiles = Array.from(e.target.files || []);
+                  setPhotoFiles((current) => [...current, ...newFiles]);
+                }}
+              />
+              <button className={styles.secondaryBtn} onClick={() => fileInputRef.current?.click()}>
+                Add Photo
+              </button>
+              {(photoFiles.length > 0 || existingPhotoUrls.length > 0) && (
                 <div className={styles.photoGrid}>
-                  {existingPhotoUrls.map((url) => <img key={url} src={url} alt="log" />)}
+                  {photoFiles.map((file, idx) => (
+                    <div key={`newfile-${idx}`} className={styles.photoItem}>
+                      <img src={URL.createObjectURL(file)} alt="preview" />
+                      <button
+                        className={styles.removePhotoBtn}
+                        onClick={() => setPhotoFiles((current) => current.filter((_, i) => i !== idx))}
+                      >
+                        ✕
+                      </button>
+                      <span className={styles.photoLabel}>New</span>
+                    </div>
+                  ))}
+                  {existingPhotoUrls.map((url) => (
+                    <div key={url} className={styles.photoItem}>
+                      <img src={url} alt="log" />
+                      <button
+                        className={styles.removePhotoBtn}
+                        onClick={() => setExistingPhotoUrls((current) => current.filter((u) => u !== url))}
+                      >
+                        ✕
+                      </button>
+                      <span className={styles.photoLabel}>Saved</span>
+                    </div>
+                  ))}
                 </div>
               )}
 
