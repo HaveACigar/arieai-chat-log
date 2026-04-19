@@ -9,18 +9,18 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "next": "16.2.4",
+    "firebase": "^10.12.5",
+    "next": "15.5.5",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "recharts": "^2.15.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.4",
-    "tailwindcss": "^4",
+    "eslint-config-next": "15.2.4",
     "typescript": "^5"
   }
 }

@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ArieAI Fitness Log
 
-## Getting Started
+Multi-user fitness logging app with:
+- Google + email/password authentication
+- One daily log per user/date (editable)
+- Optional photo uploads (0..many)
+- Calories eaten + exercise calories burned (manual entries)
+- Maintenance calorie estimate via Mifflin-St Jeor
+- Goal selector: bulk, lean bulk, dirty bulk, maintenance, cut, super cut
+- Audit trail for create/update/delete actions
+- Starter trend charts for weight and calories
 
-First, run the development server:
+## Local Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create `.env.local` in the project root:
+
+```bash
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_APP_ID=...
+```
+
+3. Run the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Firebase Requirements
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Enable Authentication providers:
+- Google
+- Email/Password
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create Firestore + Storage and add rules for user-isolated access.
 
-## Learn More
+### Suggested Firestore structure
 
-To learn more about Next.js, take a look at the following resources:
+- `users/{uid}/profile/main`
+	- `sex`, `age`, `defaultWeightUnit`, `updatedAt`
+- `users/{uid}/dailyLogs/{yyyy-mm-dd}`
+	- all daily log columns: weight, calories, exercises, photos, goal, maintenance, etc.
+- `users/{uid}/auditTrail/{auditId}`
+	- `action` (`create|update|delete`), `logDate`, `timestamp`, `before`, `after`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Height is fixed at 6'2" (188 cm) per current requirement.
+- Activity level is both user-selectable and auto-suggested from recent exercise history.
+- Photos are optional and validated client-side up to 20MB each.
