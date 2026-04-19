@@ -474,7 +474,7 @@ export default function Home() {
               <h4>Exercises</h4>
               <div className={styles.exerciseList}>
                 {exercises.map((exercise, index) => (
-                  <div className={styles.exerciseRow} key={`${exercise.name}-${index}`}>
+                  <div className={styles.exerciseRow} key={index}>
                     <input
                       placeholder="Exercise"
                       value={exercise.name}
