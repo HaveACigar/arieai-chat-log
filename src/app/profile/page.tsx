@@ -8,12 +8,16 @@ import Image from "next/image";
 import AppShell from "@/components/AppShell";
 import common from "../common.module.css";
 import { auth, db, storage } from "@/lib/firebase";
-import { BiologicalSex, Profile, WeightUnit } from "@/lib/types";
+import { BiologicalSex, HeightUnit, Profile, WeightUnit } from "@/lib/types";
+import { cmToFeetInches, feetInchesToCm } from "@/lib/fitness";
 
 function ProfileContent({ user }: { user: User }) {
   const [displayName, setDisplayName] = useState(user.displayName || "");
   const [sex, setSex] = useState<BiologicalSex>("male");
   const [age, setAge] = useState("");
+  const [heightUnit, setHeightUnit] = useState<HeightUnit>("ft_in");
+  const [heightFt, setHeightFt] = useState("");
+  const [heightIn, setHeightIn] = useState("");
   const [heightCm, setHeightCm] = useState("");
   const [defaultWeightUnit, setDefaultWeightUnit] = useState<WeightUnit>("lb");
   const [profilePhotoUrl, setProfilePhotoUrl] = useState(user.photoURL || "");
@@ -33,9 +37,27 @@ function ProfileContent({ user }: { user: User }) {
         if (data.displayName) setDisplayName(data.displayName);
         if (data.sex) setSex(data.sex);
         if (data.age) setAge(String(data.age));
-        if ((data as Profile & { heightCm?: number }).heightCm) setHeightCm(String((data as Profile & { heightCm?: number }).heightCm));
         if (data.defaultWeightUnit) setDefaultWeightUnit(data.defaultWeightUnit);
         if (data.profilePhotoUrl) setProfilePhotoUrl(data.profilePhotoUrl);
+
+        const nextUnit = data.heightUnit || "ft_in";
+        setHeightUnit(nextUnit);
+
+        const savedCm = Number(data.heightCm || 0);
+        if (savedCm > 0) {
+          setHeightCm(String(savedCm));
+          const converted = cmToFeetInches(savedCm);
+          setHeightFt(String(converted.feet));
+          setHeightIn(String(converted.inches));
+        } else {
+          const ft = Number(data.heightFt || 0);
+          const inches = Number(data.heightIn || 0);
+          if (ft > 0 || inches > 0) {
+            setHeightFt(String(ft));
+            setHeightIn(String(inches));
+            setHeightCm(String(feetInchesToCm(ft, inches)));
+          }
+        }
       }
     }
     void loadProfile();
@@ -73,11 +95,36 @@ function ProfileContent({ user }: { user: User }) {
         await updateProfile(auth.currentUser, { displayName: displayName.trim(), photoURL: photoUrl || null });
       }
 
-      const payload: Profile & { heightCm?: number } = {
+      const ftValue = Number(heightFt || 0);
+      const inValue = Number(heightIn || 0);
+      const cmValue = Number(heightCm || 0);
+
+      if (heightUnit === "ft_in" && (inValue < 0 || inValue >= 12)) {
+        setError("Inches must be between 0 and 11.");
+        setLoading(false);
+        return;
+      }
+
+      const resolvedHeightCm = heightUnit === "ft_in"
+        ? feetInchesToCm(ftValue, inValue)
+        : cmValue;
+
+      if (resolvedHeightCm <= 0) {
+        setError("Please provide a valid height.");
+        setLoading(false);
+        return;
+      }
+
+      const heightFromCm = cmToFeetInches(resolvedHeightCm);
+
+      const payload: Profile = {
         displayName: displayName.trim() || undefined,
         sex,
         age: Number(age) || 0,
-        heightCm: Number(heightCm) || undefined,
+        heightUnit,
+        heightCm: resolvedHeightCm,
+        heightFt: heightFromCm.feet,
+        heightIn: heightFromCm.inches,
         defaultWeightUnit,
         profilePhotoUrl: photoUrl || undefined,
         updatedAt: new Date().toISOString(),
@@ -124,9 +171,42 @@ function ProfileContent({ user }: { user: User }) {
             <input type="number" value={age} onChange={(e) => setAge(e.target.value)} min="0" max="120" />
           </label>
           <label>
-            Height (cm)
-            <input type="number" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} min="0" max="300" />
+            Height unit
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              {([
+                { value: "ft_in", label: "ft / in" },
+                { value: "cm", label: "cm" },
+              ] as Array<{ value: HeightUnit; label: string }>).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setHeightUnit(option.value)}
+                  style={{
+                    flex: 1, padding: "8px", border: "none", borderRadius: 9, cursor: "pointer",
+                    background: heightUnit === option.value ? "#0f766e" : "#eef2f7",
+                    color: heightUnit === option.value ? "white" : "#1f2937",
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </label>
+
+          {heightUnit === "ft_in" ? (
+            <label>
+              Height (ft/in)
+              <div className={common.inline}>
+                <input type="number" value={heightFt} onChange={(e) => setHeightFt(e.target.value)} min="0" max="8" placeholder="ft" />
+                <input type="number" value={heightIn} onChange={(e) => setHeightIn(e.target.value)} min="0" max="11" placeholder="in" />
+              </div>
+            </label>
+          ) : (
+            <label>
+              Height (cm)
+              <input type="number" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} min="0" max="300" />
+            </label>
+          )}
           <label>
             Biological sex
             <div style={{ display: "flex", gap: 8, marginTop: 4 }}>

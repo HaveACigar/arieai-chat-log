@@ -1,4 +1,5 @@
 export type WeightUnit = "lb" | "kg";
+export type HeightUnit = "ft_in" | "cm";
 
 export type GoalType =
   | "bulk"
@@ -92,6 +93,10 @@ export interface Profile {
   sex: BiologicalSex;
   age: number;
   defaultWeightUnit: WeightUnit;
+  heightUnit?: HeightUnit;
+  heightCm?: number;
+  heightFt?: number;
+  heightIn?: number;
   profilePhotoUrl?: string;
   updatedAt?: string;
 }
@@ -121,7 +126,9 @@ export interface MealEntry {
   mealName: string;        // "Breakfast" | "Lunch" | custom
   description: string;
   caloriesKcal: number;
+  estimatedCaloriesKcal?: number;
   macros: MacroEntry;
+  ingredients?: string[];
   photoUrl?: string;
   time?: string;           // "08:30"
 }

@@ -102,6 +102,22 @@ export function toKg(value: number, unit: WeightUnit): number {
   return unit === "kg" ? value : value * 0.45359237;
 }
 
+export function feetInchesToCm(feet: number, inches: number): number {
+  const totalInches = Math.max(0, feet) * 12 + Math.max(0, inches);
+  return Number((totalInches * 2.54).toFixed(1));
+}
+
+export function cmToFeetInches(cm: number): { feet: number; inches: number } {
+  if (!Number.isFinite(cm) || cm <= 0) return { feet: 0, inches: 0 };
+  const totalInches = cm / 2.54;
+  const feet = Math.floor(totalInches / 12);
+  const inches = Math.round(totalInches - feet * 12);
+  if (inches === 12) {
+    return { feet: feet + 1, inches: 0 };
+  }
+  return { feet, inches };
+}
+
 export function formatGoalLabel(goal: GoalType): string {
   return goal.replaceAll("_", " ");
 }

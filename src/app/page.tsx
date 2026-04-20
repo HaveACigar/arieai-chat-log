@@ -8,9 +8,7 @@ import AppShell from "@/components/AppShell";
 import common from "./common.module.css";
 import { db } from "@/lib/firebase";
 import { DailyLog, GoalType, Profile, WeightUnit } from "@/lib/types";
-import { GOAL_OPTIONS, WEIGH_IN_CONTEXT_OPTIONS, calculateBmi, formatDate, formatGoalLabel, toKg } from "@/lib/fitness";
-
-const HEIGHT_CM = 188;
+import { GOAL_OPTIONS, WEIGH_IN_CONTEXT_OPTIONS, calculateBmi, cmToFeetInches, formatDate, formatGoalLabel, toKg } from "@/lib/fitness";
 
 function HomeContent({ user }: { user: User }) {
   const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
@@ -22,6 +20,7 @@ function HomeContent({ user }: { user: User }) {
   const [goalType, setGoalType] = useState<GoalType>("maintenance");
   const [notes, setNotes] = useState("");
   const [logs, setLogs] = useState<DailyLog[]>([]);
+  const [heightCm, setHeightCm] = useState(188);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,8 +28,8 @@ function HomeContent({ user }: { user: User }) {
   const bmi = useMemo(() => {
     const value = Number(weight);
     if (!Number.isFinite(value) || value <= 0) return null;
-    return calculateBmi(toKg(value, weightUnit), HEIGHT_CM);
-  }, [weight, weightUnit]);
+    return calculateBmi(toKg(value, weightUnit), heightCm);
+  }, [weight, weightUnit, heightCm]);
 
   const chartData = useMemo(() => {
     return logs
@@ -39,14 +38,24 @@ function HomeContent({ user }: { user: User }) {
       .map((log) => ({
         date: log.date.slice(5),
         weightKg: Number(toKg(log.weight, log.weightUnit).toFixed(2)),
-        bmi: calculateBmi(toKg(log.weight, log.weightUnit), HEIGHT_CM),
+        bmi: calculateBmi(toKg(log.weight, log.weightUnit), log.heightCm || heightCm),
       }));
-  }, [logs]);
+  }, [logs, heightCm]);
+
+  const heightInFtIn = useMemo(() => cmToFeetInches(heightCm), [heightCm]);
 
   async function loadLogs(uid: string, date: string) {
     if (!db) return;
     setLoading(true);
     try {
+      const profileSnap = await getDoc(doc(db, "users", uid, "profile", "main"));
+      if (profileSnap.exists()) {
+        const profile = profileSnap.data() as Partial<Profile>;
+        if (profile.heightCm && profile.heightCm > 0) {
+          setHeightCm(profile.heightCm);
+        }
+      }
+
       const snap = await getDocs(collection(db, "users", uid, "dailyLogs"));
       const rows = snap.docs.map((row) => row.data() as DailyLog);
       setLogs(rows);
@@ -119,7 +128,7 @@ function HomeContent({ user }: { user: User }) {
             activityLevel: existing?.activityLevel || "moderately_active",
             sex: profile.sex || existing?.sex || "male",
             age: profile.age || existing?.age || 30,
-            heightCm: HEIGHT_CM,
+            heightCm,
             notes,
             exercises: existing?.exercises || [],
             workouts: existing?.workouts || [],
@@ -182,7 +191,7 @@ function HomeContent({ user }: { user: User }) {
               </div>
 
               <div className={common.metrics}>
-                <span>Height: 6&apos;2&quot; ({HEIGHT_CM} cm)</span>
+                <span>Height: {heightInFtIn.feet}&apos;{heightInFtIn.inches}&quot; ({heightCm} cm)</span>
                 <span>BMI: {bmi ? bmi : "enter weight"}</span>
               </div>
 

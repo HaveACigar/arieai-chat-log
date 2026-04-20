@@ -25,7 +25,9 @@ function emptyMeal(): MealEntry {
     mealName: "Meal",
     description: "",
     caloriesKcal: 0,
+    estimatedCaloriesKcal: 0,
     macros: { proteinG: 0, carbsG: 0, fatG: 0 },
+    ingredients: [],
     time: "",
   };
 }
@@ -53,6 +55,10 @@ function NutritionContent({ user }: { user: User }) {
     });
   }, [proteinG, carbsG, fatG]);
 
+  const totalEstimatedMealCalories = useMemo(() => {
+    return meals.reduce((sum, meal) => sum + macroCalories(meal.macros), 0);
+  }, [meals]);
+
   useEffect(() => {
     setCaloriesKcal(String(macroTotalCalories));
   }, [macroTotalCalories]);
@@ -71,7 +77,15 @@ function NutritionContent({ user }: { user: User }) {
         setFatG(String(existing.macros.fatG));
         setCaloriesKcal(String(existing.caloriesKcal));
         setDietRestrictions(existing.dietRestrictions?.length ? existing.dietRestrictions : ["none"]);
-        setMeals(existing.meals?.length ? existing.meals : [emptyMeal()]);
+        setMeals(
+          existing.meals?.length
+            ? existing.meals.map((meal) => ({
+                ...meal,
+                ingredients: meal.ingredients || [],
+                estimatedCaloriesKcal: meal.estimatedCaloriesKcal ?? macroCalories(meal.macros),
+              }))
+            : [emptyMeal()],
+        );
         setNotes(existing.notes || "");
       }
     } catch (err) {
@@ -128,7 +142,13 @@ function NutritionContent({ user }: { user: User }) {
     setError("");
     setMessage("");
 
-    const cleanMeals = meals.filter((meal) => meal.description.trim() || meal.caloriesKcal > 0);
+    const cleanMeals = meals
+      .filter((meal) => meal.description.trim() || meal.caloriesKcal > 0 || (meal.ingredients?.length || 0) > 0)
+      .map((meal) => ({
+        ...meal,
+        ingredients: (meal.ingredients || []).map((i) => i.trim()).filter(Boolean),
+        estimatedCaloriesKcal: macroCalories(meal.macros),
+      }));
     if (!cleanMeals.length) {
       setError("Add at least one meal entry.");
       return;
@@ -221,6 +241,7 @@ function NutritionContent({ user }: { user: User }) {
         </div>
         <div className={common.metrics}>
           <span>Macro-derived calories: {macroTotalCalories} kcal</span>
+          <span>Meal-estimated calories: {totalEstimatedMealCalories} kcal</span>
         </div>
       </section>
 
@@ -294,6 +315,21 @@ function NutritionContent({ user }: { user: User }) {
                 />
               </label>
 
+              <label>
+                Ingredients (comma-separated)
+                <input
+                  value={(meal.ingredients || []).join(", ")}
+                  onChange={(e) => {
+                    const parsed = e.target.value
+                      .split(",")
+                      .map((v) => v.trim())
+                      .filter(Boolean);
+                    setMealAt(index, { ...meal, ingredients: parsed });
+                  }}
+                  placeholder="e.g. chicken breast, brown rice, broccoli"
+                />
+              </label>
+
               <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
                 <label>
                   Protein (g)
@@ -322,6 +358,10 @@ function NutritionContent({ user }: { user: User }) {
                     onChange={(e) => setMealAt(index, { ...meal, macros: { ...meal.macros, fatG: Number(e.target.value) || 0 } })}
                   />
                 </label>
+              </div>
+
+              <div className={common.metrics}>
+                <span>Estimated calories from meal macros: {macroCalories(meal.macros)} kcal</span>
               </div>
 
               <div className={common.ctaRow}>
