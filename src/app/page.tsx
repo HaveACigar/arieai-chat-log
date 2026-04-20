@@ -282,7 +282,7 @@ function HomeContent({ user }: { user: User }) {
 export default function HomePage() {
   return (
     <AppShell
-      title="ArieAI Fitness Home"
+      title="Fitness Log"
       subtitle="Track daily weight, BMI, calories, and notes in one place."
       description="Use this page for daily body metrics and calorie tracking. It is your baseline check-in before training, nutrition, and recovery decisions."
     >

@@ -10,7 +10,6 @@ const LINKS = [
   { href: "/nutrition", label: "Nutrition" },
   { href: "/sleep", label: "Sleep" },
   { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/profile", label: "Profile" },
 ];
 
 export default function AppFooterNav() {
