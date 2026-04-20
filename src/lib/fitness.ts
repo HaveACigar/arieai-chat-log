@@ -1,4 +1,4 @@
-import { ActivityLevel, BiologicalSex, DailyLog, GoalType, WeightUnit } from "./types";
+import { ActivityLevel, BiologicalSex, DailyLog, GoalType, SleepQuality, WeightUnit, WorkoutCategory } from "./types";
 
 export const UNIT_OPTIONS: WeightUnit[] = ["lb", "kg"];
 export const GOAL_OPTIONS: GoalType[] = [
@@ -45,6 +45,30 @@ export const WORKOUT_PRESETS = [
   "Hip thrust",
 ];
 
+export const WORKOUT_CATEGORY_OPTIONS: WorkoutCategory[] = [
+  "arms",
+  "legs",
+  "core",
+  "cardio",
+  "chest",
+  "back",
+  "shoulders",
+  "full_body",
+];
+
+export const WORKOUT_PRESETS_BY_CATEGORY: Record<WorkoutCategory, string[]> = {
+  arms: ["Barbell curl", "Hammer curl", "Tricep pushdown", "Skull crusher"],
+  legs: ["Squat", "Leg press", "Romanian deadlift", "Lunge"],
+  core: ["Leg lift", "Cable crunch", "Plank", "Hanging knee raise"],
+  cardio: ["Run", "Bike", "Row", "Stair climber"],
+  chest: ["Bench press", "Incline dumbbell press", "Chest fly", "Push-up"],
+  back: ["Barbell row", "Lat pulldown", "Seated row", "Deadlift"],
+  shoulders: ["Overhead press", "Lateral raise", "Rear delt fly", "Upright row"],
+  full_body: ["Deadlift", "Clean and press", "Thruster", "Burpee"],
+};
+
+export const SLEEP_QUALITY_OPTIONS: SleepQuality[] = ["poor", "fair", "good", "excellent"];
+
 export const GOAL_GUIDANCE: Record<GoalType, string> = {
   bulk: "Eat above maintenance with steady training volume and weekly photo check-ins.",
   lean_bulk: "Aim for a small surplus, high protein, and slow weight gain to keep body fat under control.",
@@ -80,6 +104,17 @@ export function toKg(value: number, unit: WeightUnit): number {
 
 export function formatGoalLabel(goal: GoalType): string {
   return goal.replaceAll("_", " ");
+}
+
+export function formatWorkoutCategoryLabel(category: WorkoutCategory): string {
+  return category.replaceAll("_", " ");
+}
+
+export function sleepQualityScore(quality: SleepQuality): number {
+  if (quality === "poor") return 1;
+  if (quality === "fair") return 2;
+  if (quality === "good") return 3;
+  return 4;
 }
 
 export function calculateBmi(weightKg: number, heightCm: number): number {

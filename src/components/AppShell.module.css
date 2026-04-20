@@ -1,0 +1,147 @@
+.wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 24px 16px 96px;
+}
+
+.hero {
+  background: linear-gradient(135deg, #0f766e, #115e59);
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.hero h1 {
+  margin: 0 0 8px;
+}
+
+.hero p {
+  margin: 0;
+  opacity: 0.95;
+}
+
+.card,
+.topBar,
+.authCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 10px 24px rgba(10, 35, 66, 0.06);
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.topBar p {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+
+.pageContent {
+  display: grid;
+  gap: 14px;
+}
+
+.authCard {
+  max-width: 560px;
+}
+
+.authForm {
+  display: grid;
+  gap: 10px;
+}
+
+.authForm label {
+  display: grid;
+  gap: 6px;
+}
+
+.authForm input {
+  width: 100%;
+  border: 1px solid #d7dde4;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.primaryBtn,
+.secondaryBtn,
+.linkBtn {
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 10px 14px;
+}
+
+.primaryBtn {
+  background: var(--accent);
+  color: white;
+}
+
+.primaryBtn:hover {
+  background: var(--accent-strong);
+}
+
+.secondaryBtn {
+  background: #eef2f7;
+  color: #1f2937;
+}
+
+.linkBtn {
+  background: transparent;
+  color: #1f2937;
+  padding: 6px 2px;
+  text-align: left;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footerNav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  padding: 10px;
+  background: rgba(250, 251, 252, 0.98);
+  border-top: 1px solid #dbe2ea;
+  backdrop-filter: blur(6px);
+}
+
+.navLink,
+.navLinkActive {
+  text-align: center;
+  text-decoration: none;
+  border-radius: 9px;
+  padding: 8px 6px;
+  font-size: 0.86rem;
+}
+
+.navLink {
+  color: #334155;
+  background: #eef2f7;
+}
+
+.navLinkActive {
+  color: #ffffff;
+  background: #0f766e;
+}

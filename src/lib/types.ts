@@ -37,6 +37,34 @@ export interface WorkoutEntry {
   notes?: string;
 }
 
+export type WorkoutCategory =
+  | "arms"
+  | "legs"
+  | "core"
+  | "cardio"
+  | "chest"
+  | "back"
+  | "shoulders"
+  | "full_body";
+
+export interface WorkoutLog {
+  date: string;
+  category: WorkoutCategory;
+  entries: WorkoutEntry[];
+  totalVolume: number;
+  updatedAt: string;
+}
+
+export type SleepQuality = "poor" | "fair" | "good" | "excellent";
+
+export interface SleepLog {
+  date: string;
+  hours: number;
+  quality: SleepQuality;
+  notes?: string;
+  updatedAt: string;
+}
+
 export interface DailyLog {
   date: string;
   weight: number;
@@ -60,7 +88,10 @@ export interface DailyLog {
 }
 
 export interface Profile {
+  displayName?: string;
   sex: BiologicalSex;
   age: number;
   defaultWeightUnit: WeightUnit;
+  profilePhotoUrl?: string;
+  updatedAt?: string;
 }
