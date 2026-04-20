@@ -51,6 +51,38 @@
   color: var(--muted);
 }
 
+.rightActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profileIconLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid #d7dde4;
+  background: #ffffff;
+  color: #1f2937;
+  text-decoration: none;
+}
+
+.avatarImage {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .pageContent {
   display: grid;
   gap: 14px;

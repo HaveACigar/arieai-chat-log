@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, ReactNode, useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import {
   GoogleAuthProvider,
   User,
@@ -117,7 +119,28 @@ export default function AppShell({ title, subtitle, description, children }: App
           <strong>{user.displayName || user.email}</strong>
           <p>{user.email}</p>
         </div>
-        <button className={styles.linkBtn} onClick={() => { if (auth) void signOut(auth); }}>Sign out</button>
+        <div className={styles.rightActions}>
+          <Link href="/profile" className={styles.profileIconLink} aria-label="Open profile">
+            {user.photoURL ? (
+              <Image
+                src={user.photoURL}
+                alt="Profile"
+                width={36}
+                height={36}
+                className={styles.avatarImage}
+                unoptimized
+              />
+            ) : (
+              <span className={styles.avatarFallback} aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 20c0-4 3.5-7 8-7s8 3 8 7" />
+                </svg>
+              </span>
+            )}
+          </Link>
+          <button className={styles.linkBtn} onClick={() => { if (auth) void signOut(auth); }}>Sign out</button>
+        </div>
       </section>
       <section className={styles.pageContent}>{children(user)}</section>
       <AppFooterNav />

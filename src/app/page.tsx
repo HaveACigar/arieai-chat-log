@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { User } from "firebase/auth";
-import { doc, getDoc, getDocs, collection, setDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, setDoc, deleteDoc } from "firebase/firestore";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import AppShell from "@/components/AppShell";
 import common from "./common.module.css";
@@ -43,6 +43,13 @@ function HomeContent({ user }: { user: User }) {
   }, [logs, heightCm]);
 
   const heightInFtIn = useMemo(() => cmToFeetInches(heightCm), [heightCm]);
+  const sortedLogsDesc = useMemo(() => {
+    return logs.slice().sort((a, b) => b.date.localeCompare(a.date));
+  }, [logs]);
+
+  const hasExistingForSelectedDate = useMemo(() => {
+    return logs.some((log) => log.date === selectedDate);
+  }, [logs, selectedDate]);
 
   async function loadLogs(uid: string, date: string) {
     if (!db) return;
@@ -143,6 +150,28 @@ function HomeContent({ user }: { user: User }) {
           await loadLogs(user.uid, selectedDate);
         }
 
+  async function handleDeleteLog(date: string) {
+    if (!db) return;
+    if (!window.confirm(`Delete metrics log for ${date}?`)) return;
+    setError("");
+    setMessage("");
+    try {
+      await deleteDoc(doc(db, "users", user.uid, "dailyLogs", date));
+      if (selectedDate === date) {
+        setWeight("");
+        setBoneMass("");
+        setWeighInContext("");
+        setCaloriesIn("");
+        setGoalType("maintenance");
+        setNotes("");
+      }
+      setMessage(`Deleted metrics log for ${date}.`);
+      await loadLogs(user.uid, selectedDate);
+    } catch (err) {
+      setError((err as Error).message || "Unable to delete metrics log.");
+    }
+  }
+
   return (
     <>
       <section className={common.card}>
@@ -196,11 +225,40 @@ function HomeContent({ user }: { user: User }) {
               </div>
 
               <div className={common.ctaRow}>
-                <button className={common.primaryBtn} onClick={handleSave} disabled={loading}>Save daily metrics</button>
+                <button className={common.primaryBtn} onClick={handleSave} disabled={loading}>
+                  {hasExistingForSelectedDate ? "Update daily metrics" : "Save daily metrics"}
+                </button>
+                {hasExistingForSelectedDate && (
+                  <button className={common.dangerBtn} onClick={() => void handleDeleteLog(selectedDate)} disabled={loading}>
+                    Delete selected log
+                  </button>
+                )}
               </div>
               {message && <p className={common.success}>{message}</p>}
               {error && <p className={common.error}>{error}</p>}
           </section>
+
+          <section className={common.card}>
+              <h3>Edit or remove previous metrics logs</h3>
+              <p className={common.muted}>Choose a date to edit, or remove logs you no longer want to keep.</p>
+              <div className={common.listBox}>
+                {sortedLogsDesc.length === 0 && <p className={common.muted}>No metrics logs yet.</p>}
+                {sortedLogsDesc.slice(0, 30).map((log) => (
+                  <div key={log.date} className={common.rowCard}>
+                    <strong>{log.date}</strong>
+                    <span>Weight: {log.weight} {log.weightUnit} | Calories: {log.caloriesIn}</span>
+                    <div className={common.ctaRow}>
+                      <button type="button" className={common.secondaryBtn} onClick={() => setSelectedDate(log.date)}>
+                        Edit
+                      </button>
+                      <button type="button" className={common.dangerBtn} onClick={() => void handleDeleteLog(log.date)}>
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+      </section>
 
           <section className={common.card}>
               <h3>Weight & BMI trend</h3>

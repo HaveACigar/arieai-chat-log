@@ -24,7 +24,7 @@ function emptyMeal(): MealEntry {
   return {
     mealName: "Meal",
     description: "",
-    caloriesKcal: 0,
+    caloriesKcal: NaN,
     estimatedCaloriesKcal: 0,
     macros: { proteinG: 0, carbsG: 0, fatG: 0 },
     ingredients: [],
@@ -115,6 +115,20 @@ function NutritionContent({ user }: { user: User }) {
     setMeals((rows) => rows.map((row, idx) => (idx === index ? next : row)));
   }
 
+  function updateMealMacrosWithAutofill(index: number, nextMacros: MealEntry["macros"]) {
+    setMeals((rows) => rows.map((row, idx) => {
+      if (idx !== index) return row;
+      const estimated = macroCalories(nextMacros);
+      const hasManualCalories = Number.isFinite(row.caloriesKcal) && row.caloriesKcal > 0;
+      return {
+        ...row,
+        macros: nextMacros,
+        estimatedCaloriesKcal: estimated,
+        caloriesKcal: hasManualCalories ? row.caloriesKcal : estimated,
+      };
+    }));
+  }
+
   async function handleMealPhotoUpload(index: number, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file || !storage) return;
@@ -148,6 +162,9 @@ function NutritionContent({ user }: { user: User }) {
         ...meal,
         ingredients: (meal.ingredients || []).map((i) => i.trim()).filter(Boolean),
         estimatedCaloriesKcal: macroCalories(meal.macros),
+        caloriesKcal: Number.isFinite(meal.caloriesKcal) && meal.caloriesKcal > 0
+          ? meal.caloriesKcal
+          : macroCalories(meal.macros),
       }));
     if (!cleanMeals.length) {
       setError("Add at least one meal entry.");
@@ -300,8 +317,15 @@ function NutritionContent({ user }: { user: User }) {
                   <input
                     type="number"
                     min="0"
-                    value={meal.caloriesKcal}
-                    onChange={(e) => setMealAt(index, { ...meal, caloriesKcal: Number(e.target.value) || 0 })}
+                    value={Number.isFinite(meal.caloriesKcal) ? meal.caloriesKcal : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setMealAt(index, {
+                        ...meal,
+                        caloriesKcal: raw === "" ? NaN : Number(raw),
+                      });
+                    }}
+                    placeholder={String(macroCalories(meal.macros))}
                   />
                 </label>
               </div>
@@ -337,7 +361,7 @@ function NutritionContent({ user }: { user: User }) {
                     type="number"
                     min="0"
                     value={meal.macros.proteinG}
-                    onChange={(e) => setMealAt(index, { ...meal, macros: { ...meal.macros, proteinG: Number(e.target.value) || 0 } })}
+                    onChange={(e) => updateMealMacrosWithAutofill(index, { ...meal.macros, proteinG: Number(e.target.value) || 0 })}
                   />
                 </label>
                 <label>
@@ -346,7 +370,7 @@ function NutritionContent({ user }: { user: User }) {
                     type="number"
                     min="0"
                     value={meal.macros.carbsG}
-                    onChange={(e) => setMealAt(index, { ...meal, macros: { ...meal.macros, carbsG: Number(e.target.value) || 0 } })}
+                    onChange={(e) => updateMealMacrosWithAutofill(index, { ...meal.macros, carbsG: Number(e.target.value) || 0 })}
                   />
                 </label>
                 <label>
@@ -355,7 +379,7 @@ function NutritionContent({ user }: { user: User }) {
                     type="number"
                     min="0"
                     value={meal.macros.fatG}
-                    onChange={(e) => setMealAt(index, { ...meal, macros: { ...meal.macros, fatG: Number(e.target.value) || 0 } })}
+                    onChange={(e) => updateMealMacrosWithAutofill(index, { ...meal.macros, fatG: Number(e.target.value) || 0 })}
                   />
                 </label>
               </div>
