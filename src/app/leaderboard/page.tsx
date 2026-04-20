@@ -151,7 +151,11 @@ function LeaderboardContent({ user }: { user: User }) {
 
 export default function LeaderboardPage() {
   return (
-    <AppShell title="Leaderboard" subtitle="Your personal bests across weight, workouts, and sleep.">
+    <AppShell
+      title="Leaderboard"
+      subtitle="Your personal bests across weight, workouts, and sleep."
+      description="Use this page to review your top personal stats. It summarizes best outcomes so you can spot what is improving over time."
+    >
       {(user) => <LeaderboardContent user={user} />}
     </AppShell>
   );

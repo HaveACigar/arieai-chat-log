@@ -17,10 +17,11 @@ import AppFooterNav from "./AppFooterNav";
 interface AppShellProps {
   title: string;
   subtitle: string;
+  description?: string;
   children: (user: User) => ReactNode;
 }
 
-export default function AppShell({ title, subtitle, children }: AppShellProps) {
+export default function AppShell({ title, subtitle, description, children }: AppShellProps) {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [error, setError] = useState("");
@@ -76,6 +77,7 @@ export default function AppShell({ title, subtitle, children }: AppShellProps) {
         <section className={styles.hero}>
           <h1>{title}</h1>
           <p>{subtitle}</p>
+          {description && <p className={styles.description}>{description}</p>}
         </section>
 
         <section className={styles.authCard}>
@@ -108,6 +110,7 @@ export default function AppShell({ title, subtitle, children }: AppShellProps) {
       <section className={styles.hero}>
         <h1>{title}</h1>
         <p>{subtitle}</p>
+        {description && <p className={styles.description}>{description}</p>}
       </section>
       <section className={styles.topBar}>
         <div>

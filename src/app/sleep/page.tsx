@@ -167,7 +167,11 @@ function SleepContent({ user }: { user: User }) {
 
 export default function SleepPage() {
   return (
-    <AppShell title="Sleep" subtitle="Track nightly hours and quality to understand your recovery.">
+    <AppShell
+      title="Sleep"
+      subtitle="Track nightly hours and quality to understand your recovery."
+      description="Use this page to log sleep duration and sleep quality. It helps you connect recovery habits with training and daily energy."
+    >
       {(user) => <SleepContent user={user} />}
     </AppShell>
   );

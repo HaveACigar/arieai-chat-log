@@ -182,7 +182,11 @@ function ProfileContent({ user }: { user: User }) {
 
 export default function ProfilePage() {
   return (
-    <AppShell title="Profile" subtitle="Manage your personal details and appearance.">
+    <AppShell
+      title="Profile"
+      subtitle="Manage your personal details and appearance."
+      description="Use this page to maintain your account details, body defaults, and profile photo. Your preferences here inform other tracking pages."
+    >
       {(user) => <ProfileContent user={user} />}
     </AppShell>
   );

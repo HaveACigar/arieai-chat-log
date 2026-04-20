@@ -95,3 +95,43 @@ export interface Profile {
   profilePhotoUrl?: string;
   updatedAt?: string;
 }
+
+// ─── Nutrition ────────────────────────────────────────────────────────────────
+
+export type DietRestriction =
+  | "none"
+  | "vegetarian"
+  | "vegan"
+  | "gluten_free"
+  | "dairy_free"
+  | "keto"
+  | "paleo"
+  | "halal"
+  | "kosher"
+  | "nut_free"
+  | "low_fodmap";
+
+export interface MacroEntry {
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+}
+
+export interface MealEntry {
+  mealName: string;        // "Breakfast" | "Lunch" | custom
+  description: string;
+  caloriesKcal: number;
+  macros: MacroEntry;
+  photoUrl?: string;
+  time?: string;           // "08:30"
+}
+
+export interface NutritionLog {
+  date: string;
+  caloriesKcal: number;
+  macros: MacroEntry;
+  meals: MealEntry[];
+  dietRestrictions: DietRestriction[];
+  notes?: string;
+  updatedAt: string;
+}

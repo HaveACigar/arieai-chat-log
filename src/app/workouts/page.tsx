@@ -229,7 +229,11 @@ function WorkoutsContent({ user }: { user: User }) {
 
 export default function WorkoutsPage() {
   return (
-    <AppShell title="Workouts" subtitle="Track strength by category, log PRs, and watch volume grow over time.">
+    <AppShell
+      title="Workouts"
+      subtitle="Track strength by category, log PRs, and watch volume grow over time."
+      description="Use this page to record exercises, sets, reps, and load. It focuses on progression, PR tracking, and strength-volume trends."
+    >
       {(user) => <WorkoutsContent user={user} />}
     </AppShell>
   );

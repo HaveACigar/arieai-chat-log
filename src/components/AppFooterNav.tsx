@@ -7,6 +7,7 @@ import styles from "./AppShell.module.css";
 const LINKS = [
   { href: "/", label: "Home" },
   { href: "/workouts", label: "Workouts" },
+  { href: "/nutrition", label: "Nutrition" },
   { href: "/sleep", label: "Sleep" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/profile", label: "Profile" },

@@ -1,4 +1,4 @@
-import { ActivityLevel, BiologicalSex, DailyLog, GoalType, SleepQuality, WeightUnit, WorkoutCategory } from "./types";
+import { ActivityLevel, BiologicalSex, DailyLog, DietRestriction, GoalType, MealEntry, NutritionLog, SleepQuality, WeightUnit, WorkoutCategory } from "./types";
 
 export const UNIT_OPTIONS: WeightUnit[] = ["lb", "kg"];
 export const GOAL_OPTIONS: GoalType[] = [
@@ -208,4 +208,126 @@ export function buildHealthSuggestions(input: {
   }
 
   return suggestions.slice(0, 4);
+}
+
+export const DIET_RESTRICTION_OPTIONS: DietRestriction[] = [
+  "none",
+  "vegetarian",
+  "vegan",
+  "gluten_free",
+  "dairy_free",
+  "keto",
+  "paleo",
+  "halal",
+  "kosher",
+  "nut_free",
+  "low_fodmap",
+];
+
+export const ESSENTIAL_VITAMINS_BY_AGE: Array<{
+  group: string;
+  vitamins: string[];
+}> = [
+  { group: "Children (4-12)", vitamins: ["Vitamin A", "Vitamin C", "Vitamin D", "Vitamin E", "Vitamin K", "B Vitamins"] },
+  { group: "Teens (13-18)", vitamins: ["Vitamin D", "Vitamin B12", "Folate", "Vitamin C", "Vitamin A"] },
+  { group: "Adults (19-50)", vitamins: ["Vitamin D", "Vitamin C", "Vitamin A", "Vitamin E", "Vitamin K", "B12", "Folate"] },
+  { group: "Older Adults (51+)", vitamins: ["Vitamin D", "Vitamin B12", "Vitamin B6", "Folate", "Vitamin C"] },
+  { group: "Pregnancy", vitamins: ["Folate", "Vitamin D", "Vitamin B12", "Choline", "Vitamin C"] },
+];
+
+const BASE_VITAMIN_FOODS: Record<string, string[]> = {
+  "Vitamin A": ["Sweet potatoes", "Carrots", "Spinach"],
+  "Vitamin C": ["Bell peppers", "Citrus fruits", "Strawberries"],
+  "Vitamin D": ["Salmon", "Egg yolks", "Fortified milk"],
+  "Vitamin E": ["Almonds", "Sunflower seeds", "Avocado"],
+  "Vitamin K": ["Kale", "Broccoli", "Spinach"],
+  "B Vitamins": ["Beans", "Whole grains", "Eggs"],
+  "B12": ["Fish", "Dairy", "Fortified nutritional yeast"],
+  "Folate": ["Lentils", "Leafy greens", "Asparagus"],
+  "Vitamin B6": ["Chickpeas", "Banana", "Potatoes"],
+  "Choline": ["Eggs", "Chicken", "Soybeans"],
+};
+
+export function formatDietRestrictionLabel(value: DietRestriction): string {
+  return value.replaceAll("_", " ");
+}
+
+export function vitaminFoodSuggestions(vitamin: string, restrictions: DietRestriction[]): string[] {
+  let foods = BASE_VITAMIN_FOODS[vitamin] || ["Balanced mixed whole-food meal"];
+
+  if (restrictions.includes("vegan")) {
+    foods = foods.filter((f) => !["Egg yolks", "Dairy", "Salmon", "Chicken", "Fish", "Fortified milk", "Eggs"].includes(f));
+    if (vitamin === "B12" || vitamin === "Vitamin D") {
+      foods = [...foods, "Fortified plant milk", "Fortified cereal"];
+    }
+  }
+  if (restrictions.includes("vegetarian")) {
+    foods = foods.filter((f) => !["Salmon", "Chicken", "Fish"].includes(f));
+  }
+  if (restrictions.includes("dairy_free")) {
+    foods = foods.filter((f) => !["Dairy", "Fortified milk"].includes(f));
+  }
+  if (restrictions.includes("nut_free")) {
+    foods = foods.filter((f) => !["Almonds"].includes(f));
+  }
+  if (restrictions.includes("gluten_free")) {
+    foods = foods.filter((f) => !["Whole grains"].includes(f));
+  }
+  return Array.from(new Set(foods)).slice(0, 4);
+}
+
+export function macroCalories(macros: { proteinG: number; carbsG: number; fatG: number }): number {
+  return macros.proteinG * 4 + macros.carbsG * 4 + macros.fatG * 9;
+}
+
+export function mealIdeasFromHistory(input: {
+  logs: NutritionLog[];
+  restrictions: DietRestriction[];
+}): string[] {
+  const recentMeals: MealEntry[] = input.logs
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 14)
+    .flatMap((log) => log.meals || []);
+
+  const topMeals = recentMeals
+    .reduce<Record<string, number>>((acc, meal) => {
+      const key = meal.description.trim().toLowerCase();
+      if (!key) return acc;
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+  const habitual = Object.entries(topMeals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([m]) => m);
+
+  const ideas: string[] = [];
+  if (habitual.length) {
+    ideas.push(`You often eat ${habitual[0]}. Try a higher-protein version of it this week.`);
+  }
+
+  if (input.restrictions.includes("vegan")) {
+    ideas.push("Meal idea: tofu stir-fry with quinoa and mixed vegetables.");
+    ideas.push("Meal idea: lentil pasta with tomato-spinach sauce and hemp seeds.");
+  } else if (input.restrictions.includes("vegetarian")) {
+    ideas.push("Meal idea: Greek yogurt bowl, berries, oats, and chia.");
+    ideas.push("Meal idea: paneer and chickpea grain bowl with greens.");
+  } else if (input.restrictions.includes("keto")) {
+    ideas.push("Meal idea: salmon, avocado salad, olive oil dressing.");
+    ideas.push("Meal idea: eggs with spinach, mushrooms, and feta.");
+  } else {
+    ideas.push("Meal idea: grilled chicken, brown rice, and roasted vegetables.");
+    ideas.push("Meal idea: turkey chili with beans and side salad.");
+  }
+
+  if (input.restrictions.includes("gluten_free")) {
+    ideas.push("Gluten-free idea: rice bowl with lean protein, veggies, and tahini sauce.");
+  }
+  if (input.restrictions.includes("dairy_free")) {
+    ideas.push("Dairy-free idea: coconut yogurt parfait with berries and pumpkin seeds.");
+  }
+
+  return Array.from(new Set(ideas)).slice(0, 5);
 }
