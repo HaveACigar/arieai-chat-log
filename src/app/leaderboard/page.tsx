@@ -6,14 +6,15 @@ import { collection, getDocs } from "firebase/firestore";
 import AppShell from "@/components/AppShell";
 import common from "../common.module.css";
 import { db } from "@/lib/firebase";
-import { DailyLog, SleepLog, WorkoutLog } from "@/lib/types";
-import { calculateBmi, calculateEstimatedOneRepMax, formatGoalLabel, sleepQualityScore, toKg } from "@/lib/fitness";
+import { DailyLog, NutritionLog, SleepLog, WorkoutLog } from "@/lib/types";
+import { buildMonthlyPrediction, calculateBmi, calculateEstimatedOneRepMax, formatGoalLabel, sleepQualityScore, toKg } from "@/lib/fitness";
 
 type LeaderboardTab = "weight" | "workouts" | "sleep";
 
 function LeaderboardContent({ user }: { user: User }) {
   const [tab, setTab] = useState<LeaderboardTab>("weight");
   const [dailyLogs, setDailyLogs] = useState<DailyLog[]>([]);
+  const [nutritionLogs, setNutritionLogs] = useState<NutritionLog[]>([]);
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
   const [sleepLogs, setSleepLogs] = useState<SleepLog[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,12 +24,14 @@ function LeaderboardContent({ user }: { user: User }) {
       if (!db) return;
       setLoading(true);
       try {
-        const [dailySnap, workSnap, sleepSnap] = await Promise.all([
+        const [dailySnap, nutritionSnap, workSnap, sleepSnap] = await Promise.all([
           getDocs(collection(db, "users", user.uid, "dailyLogs")),
+          getDocs(collection(db, "users", user.uid, "nutritionLogs")),
           getDocs(collection(db, "users", user.uid, "workoutLogs")),
           getDocs(collection(db, "users", user.uid, "sleepLogs")),
         ]);
         setDailyLogs(dailySnap.docs.map((d) => d.data() as DailyLog));
+        setNutritionLogs(nutritionSnap.docs.map((d) => d.data() as NutritionLog));
         setWorkoutLogs(workSnap.docs.map((d) => d.data() as WorkoutLog));
         setSleepLogs(sleepSnap.docs.map((d) => d.data() as SleepLog));
       } finally {
@@ -100,6 +103,15 @@ function LeaderboardContent({ user }: { user: User }) {
     ];
   }, [sleepLogs]);
 
+  const monthlyPrediction = useMemo(() => {
+    return buildMonthlyPrediction({
+      dailyLogs,
+      nutritionLogs,
+      workoutLogs,
+      sleepLogs,
+    });
+  }, [dailyLogs, nutritionLogs, workoutLogs, sleepLogs]);
+
   const currentBoard = tab === "weight" ? weightBoard : tab === "workouts" ? workoutBoard : sleepBoard;
 
   const TABS: Array<{ key: LeaderboardTab; label: string }> = [
@@ -143,6 +155,66 @@ function LeaderboardContent({ user }: { user: User }) {
               </div>
             ))}
           </div>
+        )}
+      </section>
+
+      <section className={common.card}>
+        <h2>Next 30-Day Prediction</h2>
+        <p className={common.muted}>Trend-based projection from the data you have already logged across body metrics, training, sleep, and nutrition.</p>
+
+        {!monthlyPrediction.isUnlocked ? (
+          <div className={common.rowCard} style={{ marginTop: 12 }}>
+            <strong>Prediction locked</strong>
+            <span>{monthlyPrediction.reason}</span>
+            <span>
+              Progress so far: {monthlyPrediction.distinctLogDays} logged days, {monthlyPrediction.daysObserved} observed days.
+            </span>
+          </div>
+        ) : (
+          <>
+            <div className={common.listBox} style={{ marginTop: 14 }}>
+              {monthlyPrediction.projectedWeightKg !== null && (
+                <div className={common.rowCard}>
+                  <strong>Projected bodyweight</strong>
+                  <span>{monthlyPrediction.projectedWeightKg} kg in 30 days</span>
+                </div>
+              )}
+              {monthlyPrediction.projectedBmi !== null && (
+                <div className={common.rowCard}>
+                  <strong>Projected BMI</strong>
+                  <span>{monthlyPrediction.projectedBmi} in 30 days</span>
+                </div>
+              )}
+              {monthlyPrediction.projectedCalories !== null && (
+                <div className={common.rowCard}>
+                  <strong>Projected daily calories</strong>
+                  <span>{monthlyPrediction.projectedCalories} kcal/day</span>
+                </div>
+              )}
+              {monthlyPrediction.projectedSleepHours !== null && (
+                <div className={common.rowCard}>
+                  <strong>Projected nightly sleep</strong>
+                  <span>{monthlyPrediction.projectedSleepHours} hours/night</span>
+                </div>
+              )}
+              {monthlyPrediction.projectedWeeklyWorkoutVolume !== null && (
+                <div className={common.rowCard}>
+                  <strong>Projected weekly workout volume</strong>
+                  <span>{monthlyPrediction.projectedWeeklyWorkoutVolume.toLocaleString()} total volume</span>
+                </div>
+              )}
+            </div>
+
+            <div className={common.listBox} style={{ marginTop: 14 }}>
+              {monthlyPrediction.summary.map((item) => (
+                <div key={item} className={common.rowCard}>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+
+            <p className={common.muted} style={{ marginTop: 12 }}>{monthlyPrediction.reason}</p>
+          </>
         )}
       </section>
     </>

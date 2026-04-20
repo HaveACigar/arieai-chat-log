@@ -1,4 +1,4 @@
-import { ActivityLevel, BiologicalSex, DailyLog, DietRestriction, GoalType, MealEntry, NutritionLog, SleepQuality, WeightUnit, WorkoutCategory } from "./types";
+import { ActivityLevel, BiologicalSex, DailyLog, DietRestriction, GoalType, MealEntry, NutritionLog, SleepLog, SleepQuality, WeightUnit, WorkoutCategory, WorkoutLog } from "./types";
 
 export const UNIT_OPTIONS: WeightUnit[] = ["lb", "kg"];
 export const GOAL_OPTIONS: GoalType[] = [
@@ -346,4 +346,167 @@ export function mealIdeasFromHistory(input: {
   }
 
   return Array.from(new Set(ideas)).slice(0, 5);
+}
+
+function daysBetweenIso(start: string, end: string): number {
+  const startMs = new Date(start).getTime();
+  const endMs = new Date(end).getTime();
+  return Math.max(0, Math.round((endMs - startMs) / 86400000));
+}
+
+function linearRegressionProjection(points: Array<{ x: number; y: number }>, xTarget: number): number | null {
+  if (points.length < 2) return null;
+
+  const count = points.length;
+  const sumX = points.reduce((sum, point) => sum + point.x, 0);
+  const sumY = points.reduce((sum, point) => sum + point.y, 0);
+  const sumXY = points.reduce((sum, point) => sum + point.x * point.y, 0);
+  const sumXX = points.reduce((sum, point) => sum + point.x * point.x, 0);
+
+  const denominator = count * sumXX - sumX * sumX;
+  if (!denominator) return null;
+
+  const slope = (count * sumXY - sumX * sumY) / denominator;
+  const intercept = (sumY - slope * sumX) / count;
+  return intercept + slope * xTarget;
+}
+
+function aggregateCaloriesByDate(dailyLogs: DailyLog[], nutritionLogs: NutritionLog[]): Array<{ date: string; calories: number }> {
+  const byDate = new Map<string, number>();
+
+  dailyLogs.forEach((log) => {
+    if (log.caloriesIn > 0) byDate.set(log.date, log.caloriesIn);
+  });
+
+  nutritionLogs.forEach((log) => {
+    if (log.caloriesKcal > 0) byDate.set(log.date, log.caloriesKcal);
+  });
+
+  return Array.from(byDate.entries())
+    .map(([date, calories]) => ({ date, calories }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export interface MonthlyPrediction {
+  isUnlocked: boolean;
+  daysObserved: number;
+  distinctLogDays: number;
+  unlockThresholdDays: number;
+  unlockThresholdEntries: number;
+  reason: string;
+  projectedWeightKg: number | null;
+  projectedBmi: number | null;
+  projectedCalories: number | null;
+  projectedSleepHours: number | null;
+  projectedWeeklyWorkoutVolume: number | null;
+  summary: string[];
+}
+
+export function buildMonthlyPrediction(input: {
+  dailyLogs: DailyLog[];
+  nutritionLogs: NutritionLog[];
+  sleepLogs: SleepLog[];
+  workoutLogs: WorkoutLog[];
+}): MonthlyPrediction {
+  const allDates = Array.from(new Set([
+    ...input.dailyLogs.map((log) => log.date),
+    ...input.nutritionLogs.map((log) => log.date),
+    ...input.sleepLogs.map((log) => log.date),
+    ...input.workoutLogs.map((log) => log.date),
+  ])).sort();
+
+  const distinctLogDays = allDates.length;
+  const daysObserved = allDates.length >= 2 ? daysBetweenIso(allDates[0], allDates[allDates.length - 1]) + 1 : distinctLogDays;
+  const unlockThresholdDays = 28;
+  const unlockThresholdEntries = 20;
+  const isUnlocked = daysObserved >= unlockThresholdDays && distinctLogDays >= unlockThresholdEntries;
+
+  if (!isUnlocked) {
+    return {
+      isUnlocked,
+      daysObserved,
+      distinctLogDays,
+      unlockThresholdDays,
+      unlockThresholdEntries,
+      reason: `Prediction unlocks after about 4 weeks of history. You currently have ${distinctLogDays} logged days across ${daysObserved} observed days.`,
+      projectedWeightKg: null,
+      projectedBmi: null,
+      projectedCalories: null,
+      projectedSleepHours: null,
+      projectedWeeklyWorkoutVolume: null,
+      summary: [],
+    };
+  }
+
+  const summary: string[] = [];
+  const earliestDate = allDates[0];
+  const lastObservedDay = daysBetweenIso(earliestDate, allDates[allDates.length - 1]);
+  const targetDay = lastObservedDay + 30;
+
+  const weightPoints = input.dailyLogs
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((log) => ({ x: daysBetweenIso(earliestDate, log.date), y: toKg(log.weight, log.weightUnit) }));
+
+  const projectedWeightKgRaw = weightPoints.length >= 6 ? linearRegressionProjection(weightPoints, targetDay) : null;
+  const projectedWeightKg = projectedWeightKgRaw ? Number(Math.max(30, projectedWeightKgRaw).toFixed(1)) : null;
+  const latestHeightCm = input.dailyLogs.slice().sort((a, b) => b.date.localeCompare(a.date))[0]?.heightCm || 188;
+  const projectedBmi = projectedWeightKg ? calculateBmi(projectedWeightKg, latestHeightCm) : null;
+
+  const caloriePoints = aggregateCaloriesByDate(input.dailyLogs, input.nutritionLogs)
+    .map((row) => ({ x: daysBetweenIso(earliestDate, row.date), y: row.calories }));
+  const projectedCaloriesRaw = caloriePoints.length >= 6 ? linearRegressionProjection(caloriePoints, targetDay) : null;
+  const projectedCalories = projectedCaloriesRaw ? Math.round(Math.max(0, projectedCaloriesRaw)) : null;
+
+  const sleepPoints = input.sleepLogs
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((log) => ({ x: daysBetweenIso(earliestDate, log.date), y: log.hours }));
+  const projectedSleepHoursRaw = sleepPoints.length >= 6 ? linearRegressionProjection(sleepPoints, targetDay) : null;
+  const projectedSleepHours = projectedSleepHoursRaw ? Number(Math.max(0, projectedSleepHoursRaw).toFixed(1)) : null;
+
+  const workoutVolumeByDate = input.workoutLogs.reduce<Map<string, number>>((acc, log) => {
+    acc.set(log.date, (acc.get(log.date) || 0) + (log.totalVolume || 0));
+    return acc;
+  }, new Map<string, number>());
+  const workoutPoints = Array.from(workoutVolumeByDate.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, totalVolume]) => ({ x: daysBetweenIso(earliestDate, date), y: totalVolume }));
+  const projectedWorkoutVolumeRaw = workoutPoints.length >= 6 ? linearRegressionProjection(workoutPoints, targetDay) : null;
+  const projectedWeeklyWorkoutVolume = projectedWorkoutVolumeRaw ? Math.round(Math.max(0, projectedWorkoutVolumeRaw) * 7) : null;
+
+  if (projectedWeightKg !== null) {
+    summary.push(`At the current trend, bodyweight projects to about ${projectedWeightKg} kg in 30 days.`);
+  }
+  if (projectedBmi !== null) {
+    summary.push(`Projected BMI in 30 days is about ${projectedBmi}.`);
+  }
+  if (projectedCalories !== null) {
+    summary.push(`Average intake trend points toward roughly ${projectedCalories} kcal per day next month.`);
+  }
+  if (projectedSleepHours !== null) {
+    summary.push(`Sleep trend points toward about ${projectedSleepHours} hours per night next month.`);
+  }
+  if (projectedWeeklyWorkoutVolume !== null) {
+    summary.push(`Training trend points toward roughly ${projectedWeeklyWorkoutVolume.toLocaleString()} total weekly volume.`);
+  }
+
+  if (summary.length === 0) {
+    summary.push("You have enough history to unlock predictions, but not enough repeated entries in one category yet for a strong monthly projection.");
+  }
+
+  return {
+    isUnlocked,
+    daysObserved,
+    distinctLogDays,
+    unlockThresholdDays,
+    unlockThresholdEntries,
+    reason: "Prediction is based on simple trend analysis from your logged data and is not medical advice.",
+    projectedWeightKg,
+    projectedBmi,
+    projectedCalories,
+    projectedSleepHours,
+    projectedWeeklyWorkoutVolume,
+    summary,
+  };
 }
