@@ -1,23 +1,33 @@
 :root {
-  --bg: #f7f7f4;
-  --surface: #ffffff;
-  --text: #1a1a1a;
-  --muted: #697077;
-  --accent: #0f766e;
-  --accent-strong: #115e59;
-  --border: #e6e8eb;
+  --bg: #eef3fb;
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-strong: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #0e7490;
+  --accent-strong: #0c4a6e;
+  --border: rgba(148, 163, 184, 0.28);
   --danger: #b42318;
+  --ring: rgba(14, 116, 144, 0.25);
 }
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, #f0fdfa 0%, var(--bg) 42%);
+  background:
+    radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.22), transparent 40%),
+    radial-gradient(circle at 88% 12%, rgba(251, 146, 60, 0.16), transparent 34%),
+    linear-gradient(160deg, #f3f7ff 0%, var(--bg) 58%, #e9f4ff 100%);
   color: var(--text);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
 }
 
 * {
   box-sizing: border-box;
+}
+
+*:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
 }
 
 button,
